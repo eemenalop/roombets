@@ -1,8 +1,10 @@
 version: '3.8'
+
 services:
-  db:
-    image: postgres:15
-    restart: always
+  postgres:
+    image: postgres:15-alpine
+    container_name: roombets_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: roombets_user
       POSTGRES_PASSWORD: roombets_password
@@ -11,6 +13,27 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roombets_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: roombets_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:
