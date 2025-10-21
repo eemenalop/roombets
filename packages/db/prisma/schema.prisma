@@ -1,0 +1,333 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Authentication Models
+// ============================================
+
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Auth relation (1:1)
+  account Account?
+
+  // App relations
+  wallet            Wallet?
+  betsAsProposer    Bet[]              @relation("BetProposer")
+  betsAsAcceptor    Bet[]              @relation("BetAcceptor")
+  chatMessages      ChatMessage[]
+  notifications     Notification[]
+  walletTransactions WalletTransaction[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String  @unique
+  type              String  // "oauth" or "credentials"
+  provider          String  // "google", "apple", "credentials"
+  providerAccountId String? // User ID from the provider (Google/Apple)
+
+  // For credentials provider
+  passwordHash String?
+
+  // For OAuth providers
+  accessToken  String?
+  refreshToken String?
+  expiresAt    Int?
+  tokenType    String?
+  scope        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String   // Email or user ID
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// Wallet & Transaction Models
+// ============================================
+
+model Wallet {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  balance   Decimal  @default(1000) @db.Decimal(10, 2)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+enum TransactionType {
+  BET_PLACED
+  BET_WON
+  BET_LOST
+  DAILY_BONUS
+  ADMIN_ADJUSTMENT
+}
+
+model WalletTransaction {
+  id          Int             @id @default(autoincrement())
+  userId      String
+  type        TransactionType
+  amount      Decimal         @db.Decimal(10, 2)
+  balanceBefore Decimal       @db.Decimal(10, 2)
+  balanceAfter  Decimal       @db.Decimal(10, 2)
+  description String?
+  betId       Int?
+  createdAt   DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bet  Bet?  @relation(fields: [betId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("wallet_transactions")
+}
+
+// ============================================
+// Sports Domain Models
+// ============================================
+
+model Sport {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // "Baseball", "Basketball"
+  slug      String   @unique // "baseball", "basketball"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  leagues League[]
+
+  @@map("sports")
+}
+
+model League {
+  id        Int      @id @default(autoincrement())
+  sportId   Int
+  name      String   // "MLB", "NBA"
+  slug      String   @unique // "mlb", "nba"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  sport     Sport      @relation(fields: [sportId], references: [id], onDelete: Cascade)
+  teams     Team[]
+  games     Game[]
+  chatRooms ChatRoom[]
+
+  @@map("leagues")
+}
+
+model Team {
+  id             Int      @id @default(autoincrement())
+  leagueId       Int
+  externalApiId  String   // ID from Balldontlie API
+  name           String   // "Los Angeles Lakers"
+  abbreviation   String   // "LAL"
+  city           String?  // "Los Angeles"
+  conference     String?  // "Western"
+  division       String?  // "Pacific"
+  logoUrl        String?
+  createdAt      DateTime @default(now())
+
+  league         League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  homeGames      Game[] @relation("HomeTeam")
+  awayGames      Game[] @relation("AwayTeam")
+
+  @@unique([leagueId, externalApiId])
+  @@index([externalApiId])
+  @@map("teams")
+}
+
+enum GameStatus {
+  SCHEDULED
+  IN_PROGRESS
+  FINAL
+  POSTPONED
+  CANCELLED
+}
+
+model Game {
+  id            Int        @id @default(autoincrement())
+  leagueId      Int
+  externalApiId String     // ID from Balldontlie API
+  homeTeamId    Int
+  awayTeamId    Int
+  homeScore     Int?
+  awayScore     Int?
+  startTime     DateTime
+  status        GameStatus @default(SCHEDULED)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  homeTeam Team   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam Team   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  bets     Bet[]
+
+  @@unique([leagueId, externalApiId])
+  @@index([externalApiId])
+  @@index([status])
+  @@index([startTime])
+  @@map("games")
+}
+
+// ============================================
+// Betting Models
+// ============================================
+
+enum BetType {
+  MONEYLINE_HOME    // Bet on home team to win
+  MONEYLINE_AWAY    // Bet on away team to win
+  OVER_TOTAL        // Total points over a number
+  UNDER_TOTAL       // Total points under a number
+  SPREAD_HOME       // Home team with point spread
+  SPREAD_AWAY       // Away team with point spread
+}
+
+enum BetStatus {
+  PENDING        // Created, waiting for acceptor
+  ACTIVE         // Accepted, game in progress
+  SETTLED_WON    // Game finished, proposer won
+  SETTLED_LOST   // Game finished, proposer lost
+  CANCELLED      // Cancelled before acceptance
+  EXPIRED        // Game started before acceptance
+}
+
+model Bet {
+  id              Int        @id @default(autoincrement())
+  gameId          Int
+  proposerUserId  String
+  acceptorUserId  String?
+  betType         BetType
+  amount          Decimal    @db.Decimal(10, 2)
+  
+  // Additional bet parameters (for spreads, totals)
+  line            Decimal?   @db.Decimal(5, 1) // Point spread or total line
+  
+  status          BetStatus  @default(PENDING)
+  createdAt       DateTime   @default(now())
+  acceptedAt      DateTime?
+  settledAt       DateTime?
+  updatedAt       DateTime   @updatedAt
+
+  game             Game                @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  proposer         User                @relation("BetProposer", fields: [proposerUserId], references: [id], onDelete: Cascade)
+  acceptor         User?               @relation("BetAcceptor", fields: [acceptorUserId], references: [id], onDelete: Cascade)
+  walletTransactions WalletTransaction[]
+  chatMessage      ChatMessage?
+
+  @@index([gameId])
+  @@index([proposerUserId])
+  @@index([acceptorUserId])
+  @@index([status])
+  @@map("bets")
+}
+
+// ============================================
+// Chat Models
+// ============================================
+
+model ChatRoom {
+  id        Int      @id @default(autoincrement())
+  leagueId  Int
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  league   League        @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([slug])
+  @@index([leagueId])
+  @@map("chat_rooms")
+}
+
+enum MessageType {
+  TEXT          // Regular text message
+  BET_PROPOSAL  // Bet proposal message
+  SYSTEM        // System messages (user joined, etc.)
+}
+
+model ChatMessage {
+  id          Int         @id @default(autoincrement())
+  roomId      Int
+  userId      String
+  type        MessageType @default(TEXT)
+  messageText String?     @db.Text
+  betId       Int?        @unique
+  sentAt      DateTime    @default(now())
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bet  Bet?     @relation(fields: [betId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([sentAt])
+  @@map("chat_messages")
+}
+
+// ============================================
+// Notification Models
+// ============================================
+
+enum NotificationType {
+  BET_WON   // You won a bet
+  BET_LOST  // You lost a bet
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id          Int                @id @default(autoincrement())
+  userId      String
+  type        NotificationType
+  status      NotificationStatus @default(PENDING)
+  title       String
+  message     String             @db.Text
+  
+  // Metadata for linking to related entities
+  betId       Int?
+  
+  sentAt      DateTime?
+  createdAt   DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notifications")
+}
