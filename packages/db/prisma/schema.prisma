@@ -226,6 +226,11 @@ model Game {
 // Betting Models
 // ============================================
 
+enum BetMode {
+  SIMPLE   // Single bet on one game
+  PARLAY   // Multiple bets combined
+}
+
 enum BetType {
   // Full Game - Basic
   MONEYLINE_HOME
@@ -277,12 +282,36 @@ enum BetStatus {
   EXPIRED        // Game started before acceptance
 }
 
+model BetTypeConfig {
+  id              Int      @id @default(autoincrement())
+  betType         BetType  @unique
+  baseMultiplier  Decimal  @db.Decimal(5, 2) // Base odds multiplier
+  description     String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("bet_type_configs")
+}
+
 model Bet {
   id              Int        @id @default(autoincrement())
-  gameId          Int
+  
+  // Bet mode (simple or parlay)
+  betMode         BetMode    @default(SIMPLE)
+  
+  // For SIMPLE bets
+  gameId          Int?       // Nullable for parlay parents
+  betType         BetType?   // Nullable for parlay parents
+  
+  // For PARLAY bets
+  isParent        Boolean    @default(false) // True if this is the parlay container
+  parentBetId     Int?       // Reference to parent bet if this is a child
+  multiplier      Decimal?   @db.Decimal(10, 2) // Calculated multiplier for parlay
+  
+  // Users and amounts
   proposerUserId  String
   acceptorUserId  String?
-  betType         BetType
   amount          Decimal    @db.Decimal(10, 2)
   
   // Bet parameters
@@ -296,9 +325,14 @@ model Bet {
   settledAt       DateTime?
   updatedAt       DateTime   @updatedAt
 
-  game             Game                @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game             Game?               @relation(fields: [gameId], references: [id], onDelete: Cascade)
   proposer         User                @relation("BetProposer", fields: [proposerUserId], references: [id], onDelete: Cascade)
   acceptor         User?               @relation("BetAcceptor", fields: [acceptorUserId], references: [id], onDelete: Cascade)
+  
+  // Parlay relationships
+  parentBet        Bet?                @relation("ParlayBets", fields: [parentBetId], references: [id], onDelete: Cascade)
+  childBets        Bet[]               @relation("ParlayBets")
+  
   walletTransactions WalletTransaction[]
   chatMessage      ChatMessage?
 
@@ -306,6 +340,7 @@ model Bet {
   @@index([proposerUserId])
   @@index([acceptorUserId])
   @@index([status])
+  @@index([parentBetId])
   @@map("bets")
 }
 
