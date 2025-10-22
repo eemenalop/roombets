@@ -184,6 +184,29 @@ model Game {
   awayScore     Int?
   startTime     DateTime
   status        GameStatus @default(SCHEDULED)
+  
+  // Game progress
+  period        Int?       // Current quarter/period (1-4, 5+ for OT)
+  timeRemaining String?    // Time remaining in period
+  
+  // Quarter scores - Home team
+  homeQ1        Int?
+  homeQ2        Int?
+  homeQ3        Int?
+  homeQ4        Int?
+  homeOT1       Int?
+  homeOT2       Int?
+  homeOT3       Int?
+  
+  // Quarter scores - Away team
+  awayQ1        Int?
+  awayQ2        Int?
+  awayQ3        Int?
+  awayQ4        Int?
+  awayOT1       Int?
+  awayOT2       Int?
+  awayOT3       Int?
+  
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -204,12 +227,45 @@ model Game {
 // ============================================
 
 enum BetType {
-  MONEYLINE_HOME    // Bet on home team to win
-  MONEYLINE_AWAY    // Bet on away team to win
-  OVER_TOTAL        // Total points over a number
-  UNDER_TOTAL       // Total points under a number
-  SPREAD_HOME       // Home team with point spread
-  SPREAD_AWAY       // Away team with point spread
+  // Full Game - Basic
+  MONEYLINE_HOME
+  MONEYLINE_AWAY
+  SPREAD_HOME
+  SPREAD_AWAY
+  OVER_TOTAL
+  UNDER_TOTAL
+  
+  // Full Game - Team Totals
+  TEAM_TOTAL_OVER_HOME
+  TEAM_TOTAL_UNDER_HOME
+  TEAM_TOTAL_OVER_AWAY
+  TEAM_TOTAL_UNDER_AWAY
+  
+  // Quarter Betting
+  QUARTER_WINNER_HOME
+  QUARTER_WINNER_AWAY
+  QUARTER_OVER
+  QUARTER_UNDER
+  TEAM_QUARTER_OVER_HOME
+  TEAM_QUARTER_UNDER_HOME
+  TEAM_QUARTER_OVER_AWAY
+  TEAM_QUARTER_UNDER_AWAY
+  
+  // Half Betting
+  FIRST_HALF_WINNER_HOME
+  FIRST_HALF_WINNER_AWAY
+  FIRST_HALF_OVER
+  FIRST_HALF_UNDER
+  SECOND_HALF_WINNER_HOME
+  SECOND_HALF_WINNER_AWAY
+  SECOND_HALF_OVER
+  SECOND_HALF_UNDER
+  
+  // Special Bets
+  OVERTIME_YES
+  OVERTIME_NO
+  HIGHEST_QUARTER
+  ALL_QUARTERS_SAME_WINNER
 }
 
 enum BetStatus {
@@ -229,8 +285,10 @@ model Bet {
   betType         BetType
   amount          Decimal    @db.Decimal(10, 2)
   
-  // Additional bet parameters (for spreads, totals)
+  // Bet parameters
   line            Decimal?   @db.Decimal(5, 1) // Point spread or total line
+  quarter         Int?       // For quarter-specific bets (1-4)
+  teamSide        String?    // 'HOME' or 'AWAY' for team-specific bets
   
   status          BetStatus  @default(PENDING)
   createdAt       DateTime   @default(now())
