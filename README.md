@@ -1,135 +1,326 @@
-# Turborepo starter
+# RoomBets 🏀⚽
 
-This Turborepo starter is maintained by the Turborepo core team.
+**Social Casino Platform** - P2P betting on real-world sports events using fictional currency.
 
-## Using this example
+A social platform where users engage in peer-to-peer betting on sports events using in-app "Chips". Features real-time chat rooms, live score updates, and a comprehensive betting system with 33 different bet types.
 
-Run the following command:
+## 🎯 Overview
 
-```sh
-npx create-turbo@latest
-```
+RoomBets is a **free-to-play social casino** focused on sports betting. Unlike traditional gambling platforms, users bet with fictional currency ("Chips") earned through daily rewards and game participation.
 
-## What's inside?
+### Key Features
+- **Peer-to-Peer Betting**: Direct bets between users in themed chat rooms
+- **Live Sports Data**: Real-time synchronization with external APIs (NBA, MLB, etc.)
+- **33 Bet Types**: Moneyline, spreads, over/under, quarters, halves, team totals, specials
+- **Parlay System**: Combine multiple bets with multiplier calculations
+- **Real-time Chat**: WebSocket-powered chat rooms for each league/game
+- **Wallet System**: Transaction history and balance management
+- **Mobile-First**: Responsive design for all devices
 
-This Turborepo includes the following packages/apps:
+## 🏗️ Architecture
 
-### Apps and Packages
+### Tech Stack
+- **Framework**: Next.js 15 (Fullstack)
+- **Database**: PostgreSQL + Redis
+- **ORM**: Prisma
+- **Real-time**: Socket.IO
+- **Styling**: Tailwind CSS
+- **Authentication**: NextAuth.js
+- **Deployment**: Vercel (Frontend) + Railway/Render (Services)
+- **Monorepo**: Turborepo + pnpm
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+### System Architecture
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+┌─────────────────────┐    ┌─────────────────────┐
+│   Next.js Frontend  │    │  Next.js API Routes │
+│                     │    │                     │
+│ - React Components  │    │ - REST API          │
+│ - Tailwind CSS      │    │ - Database Access   │
+│ - Client State      │    │ - Auth Middleware   │
+└─────────────────────┘    └─────────────────────┘
+             │                           │
+             └─────────────┬─────────────┘
+                           │
+                    ┌─────────────┐
+                    │ PostgreSQL  │
+                    │             │
+                    │ - Users     │
+                    │ - Games     │
+                    │ - Bets      │
+                    │ - Wallets   │
+                    │ - Chat      │
+                    └─────────────┘
+                           │
+             ┌─────────────┼─────────────┐
+             │             │             │
+    ┌────────▼────┐ ┌──────▼─────┐ ┌─────▼─────┐
+    │ WebSocket   │ │ Redis      │ │ Email      │
+    │ Service     │ │ Cache      │ │ Service    │
+    │             │ │             │ │            │
+    │ - Chat      │ │ - Sessions  │ │ - Notifications│
+    │ - Live      │ │ - Rate      │ │ - Templates   │
+    │ - Updates   │ │ - Limits    │ │            │
+    └─────────────┘ └─────────────┘ └─────────────┘
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Database Schema
+
+**Core Tables:**
+- `users` - User accounts and profiles
+- `wallets` - Chip balances and transactions
+- `sports` - Baseball, Basketball, etc.
+- `leagues` - NBA, MLB, NFL, etc.
+- `teams` - Lakers, Warriors, etc.
+- `games` - Scheduled and live games
+- `bets` - P2P betting contracts
+- `chat_rooms` - Discussion channels
+- `chat_messages` - Messages and bet proposals
+- `bet_type_configs` - 33 betting configurations
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js**: 18+
+- **Docker**: For local database
+- **pnpm**: Package manager
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd roombets
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Start local database**
+   ```bash
+   # Start PostgreSQL + Redis
+   docker compose up -d
+
+   # Verify containers are running
+   docker compose ps
+   ```
+
+4. **Set up database**
+   ```bash
+   # Generate Prisma client
+   pnpm --filter @repo/db generate
+
+   # Run migrations
+   pnpm --filter @repo/db migrate
+
+   # Seed initial data
+   pnpm --filter @repo/db seed
+   ```
+
+5. **Start development server**
+   ```bash
+   # Start Next.js app
+   pnpm --filter web dev
+
+   # App available at: http://localhost:3000
+   ```
+
+6. **Test API endpoints**
+   ```bash
+   # Test sports endpoint
+   curl http://localhost:3000/api/sports
+
+   # Test leagues endpoint
+   curl http://localhost:3000/api/leagues
+   ```
+
+## 📁 Project Structure
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+roombets/
+├── apps/
+│   ├── web/                 # Next.js Fullstack App
+│   │   ├── src/
+│   │   │   ├── app/         # Next.js App Router
+│   │   │   │   ├── api/     # API Routes (/api/*)
+│   │   │   │   ├── (auth)/  # Authentication pages
+│   │   │   │   └── page.tsx # Home page
+│   │   │   └── lib/         # Utilities
+│   │   │       └── db.ts    # Database connection
+│   │   ├── .env.local       # Local environment vars
+│   │   └── next.config.ts   # Next.js configuration
+│   │
+│   ├── websocket/           # Socket.IO Real-time Service
+│   └── notifications/       # Email Notification Service
+│
+├── packages/
+│   ├── db/                  # Shared Database Package
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma    # Database schema
+│   │   │   ├── seed.ts          # Initial data
+│   │   │   └── migrations/      # DB migrations
+│   │   └── generated/           # Prisma client
+│   │
+│   ├── ui/                  # Shared UI Components
+│   ├── eslint-config/       # Shared ESLint config
+│   └── typescript-config/   # Shared TypeScript config
+│
+├── docker-compose.yml       # Local database setup
+├── turbo.json              # Turborepo configuration
+└── package.json            # Monorepo root config
 ```
 
-### Develop
+## 🔧 Available Scripts
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+### Root Scripts
+```bash
+pnpm install          # Install all dependencies
+pnpm dev             # Start all apps in development
+pnpm build           # Build all apps
+pnpm lint            # Run linting
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+### Database Scripts
+```bash
+pnpm --filter @repo/db generate    # Generate Prisma client
+pnpm --filter @repo/db migrate     # Run migrations
+pnpm --filter @repo/db seed        # Seed database
+pnpm --filter @repo/db studio      # Open Prisma Studio
 ```
 
-### Remote Caching
+### App Scripts
+```bash
+pnpm --filter web dev         # Start Next.js dev server
+pnpm --filter web build       # Build Next.js app
+pnpm --filter web start       # Start Next.js production server
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+pnpm --filter websocket dev   # Start WebSocket service
+pnpm --filter notifications dev # Start notification service
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## 🗄️ Database
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+### Local Development
+- **PostgreSQL**: `localhost:5432` / Database: `roombets_db`
+- **Redis**: `localhost:6379`
+- **Prisma Studio**: `pnpm --filter @repo/db studio`
 
+### Key Tables Overview
+
+| Table | Records | Purpose |
+|-------|---------|---------|
+| `sports` | 1 | Basketball |
+| `leagues` | 1 | NBA |
+| `chat_rooms` | 3 | NBA General, Eastern, Western |
+| `bet_type_configs` | 33 | All betting configurations |
+| `users` | 0 | User accounts (created via auth) |
+| `games` | 0 | NBA games (synced from API) |
+| `bets` | 0 | P2P betting contracts |
+
+### Bet Types Available
+
+**Full Game (6 types):**
+- Moneyline (Home/Away)
+- Spread (Home/Away)
+- Over/Under Total
+
+**Team Totals (4 types):**
+- Over/Under per team
+
+**Quarter Betting (8 types):**
+- Winner, Over/Under per quarter
+
+**Half Betting (8 types):**
+- Winner, Over/Under per half
+
+**Special Bets (7 types):**
+- Overtime, Highest Quarter, etc.
+
+## 🧪 Testing & Development
+
+### API Testing
+```bash
+# Test all endpoints
+curl http://localhost:3000/api/sports
+curl http://localhost:3000/api/leagues
+curl http://localhost:3000/api/chat-rooms
+curl http://localhost:3000/api/bet-type-configs
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+### Database Management
+```bash
+# View data in browser
+pnpm --filter @repo/db studio
+
+# Reset database (dangerous!)
+pnpm --filter @repo/db reset
 ```
 
-## Useful Links
+### Environment Variables
+```bash
+# Copy and customize
+cp apps/web/.env.local.example apps/web/.env.local
+```
 
-Learn more about the power of Turborepo:
+## 📊 Current Status
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+### ✅ Completed (Phase 1)
+- [x] Monorepo setup with Turborepo
+- [x] Docker environment (PostgreSQL + Redis)
+- [x] Complete Prisma schema (33 bet types + parlays)
+- [x] Database migrations and seeding
+- [x] Next.js API routes framework
+- [x] Basic CRUD endpoints
+
+### 🚧 In Progress
+- [ ] NextAuth.js authentication
+- [ ] User registration/login
+- [ ] Wallet and transaction system
+
+### 📋 Next Steps (Phase 2)
+- [ ] Real-time WebSocket service
+- [ ] NBA API integration
+- [ ] Live game synchronization
+- [ ] Bet creation and acceptance
+- [ ] Chat room implementation
+- [ ] Frontend UI components
+
+### 🔮 Future Features
+- [ ] Multiple sports (MLB, NFL, etc.)
+- [ ] Advanced betting strategies
+- [ ] Tournament system
+- [ ] Leaderboards and rankings
+- [ ] Mobile app
+- [ ] Social features
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⚠️ Important Notes
+
+- **This is a social casino** - All betting uses fictional currency
+- **No real money** involved - Purely for entertainment
+- **Age-restricted** - Must be 18+ to participate
+- **Responsible gaming** - Gambling addiction awareness
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/roombets/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/roombets/discussions)
+- **Documentation**: See [ARCHITECTURE.md](ARCHITECTURE.md) and [SESSION.md](SESSION.md)
+
+---
+
+**Built with ❤️ for sports fans and betting enthusiasts**</content>
+</xai:function_call">Wrote contents to /Users/eemena/Documents/projects/roombets/README.md
