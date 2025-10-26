@@ -1,10 +1,10 @@
-# RoomBets 🏀⚽
+# RoomBets
 
 **Social Casino Platform** - P2P betting on real-world sports events using fictional currency.
 
 A social platform where users engage in peer-to-peer betting on sports events using in-app "Chips". Features real-time chat rooms, live score updates, and a comprehensive betting system with 33 different bet types.
 
-## 🎯 Overview
+##  Overview
 
 RoomBets is a **free-to-play social casino** focused on sports betting. Unlike traditional gambling platforms, users bet with fictional currency ("Chips") earned through daily rewards and game participation.
 
@@ -17,7 +17,7 @@ RoomBets is a **free-to-play social casino** focused on sports betting. Unlike t
 - **Wallet System**: Transaction history and balance management
 - **Mobile-First**: Responsive design for all devices
 
-## 🏗️ Architecture
+## Architecture
 
 ### Tech Stack
 - **Framework**: Next.js 15 (Fullstack)
@@ -78,7 +78,7 @@ RoomBets is a **free-to-play social casino** focused on sports betting. Unlike t
 - `chat_messages` - Messages and bet proposals
 - `bet_type_configs` - 33 betting configurations
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Node.js**: 18+
@@ -172,7 +172,7 @@ roombets/
 └── package.json            # Monorepo root config
 ```
 
-## 🔧 Available Scripts
+##  Available Scripts
 
 ### Root Scripts
 ```bash
@@ -200,7 +200,7 @@ pnpm --filter websocket dev   # Start WebSocket service
 pnpm --filter notifications dev # Start notification service
 ```
 
-## 🗄️ Database
+##  Database
 
 ### Local Development
 - **PostgreSQL**: `localhost:5432` / Database: `roombets_db`
@@ -238,7 +238,7 @@ pnpm --filter notifications dev # Start notification service
 **Special Bets (7 types):**
 - Overtime, Highest Quarter, etc.
 
-## 🧪 Testing & Development
+## Testing & Development
 
 ### API Testing
 ```bash
